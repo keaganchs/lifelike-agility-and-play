@@ -32,10 +32,10 @@ class PureDistillLearner(PGLearner):
     """
 
     def __init__(self, league_mgr_addr, model_pool_addrs, learner_ports, rm_size,
-                 batch_size, ob_space, ac_space, policy, gpu_id, **kwargs):
+                 batch_size, ob_space, ac_space, policy, gpu_id, track_wandb, **kwargs):
         super(PureDistillLearner, self).__init__(
             league_mgr_addr, model_pool_addrs, learner_ports, rm_size, batch_size,
-            ob_space, ac_space, policy, gpu_id, data_type=DistillData, **kwargs)
+            ob_space, ac_space, policy, gpu_id, track_wandb, data_type=DistillData, **kwargs)
 
     def _build_train_op(self):
         params_pi = tf.trainable_variables('model')  # notice

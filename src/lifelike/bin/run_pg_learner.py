@@ -5,10 +5,13 @@ except ImportError:
     HAS_HVD = False
 from absl import app
 from absl import flags
+from tleague.utils import logger
 from tleague.learners.ppo_learner3 import PPOLearner
 from lifelike.learning.learners.distill_learner import PureDistillLearner
 from tleague.utils import read_config_dict
 from tleague.utils import import_module_or_data
+
+import wandb
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("league_mgr_addr", "localhost:10005",
@@ -71,6 +74,14 @@ flags.DEFINE_integer("log_infos_interval", 20,
 flags.DEFINE_integer("visualize_graph", 0,
                      "visualize the tf compute graph. 0: disable, 1: enable")
 
+# Fix wandb connection issues on slow clusters - https://github.com/wandb/wandb/issues/3911#issuecomment-1409769887
+flags.DEFINE_string("WANDB__SERVICE_WAIT", "600", "fix connection issues on slow clusters")
+
+flags.DEFINE_string("track_wandb", "True", "Enable Weights and Biases tracking") 
+flags.DEFINE_string("wandb_entity", "keagan", "Weights and Biases entity")
+flags.DEFINE_string("wandb_project", "lifelike_agility_and_play", "Weights and Biases project")
+flags.DEFINE_string("wandb_group", "test", "Weights and Biases group")
+flags.DEFINE_string("wandb_name", "test4", "Weights and Biases name")
 
 def main(_):
     if HAS_HVD:
@@ -99,6 +110,7 @@ def main(_):
     policy = import_module_or_data(FLAGS.policy)
     policy_config = read_config_dict(FLAGS.policy_config)
     learner_config = read_config_dict(FLAGS.learner_config)
+    learner_config = {**learner_config, 'track_wandb': FLAGS.track_wandb}
     if FLAGS.type == 'PPO':
         learner_class = PPOLearner
     elif FLAGS.type == 'PureDistill':
@@ -134,8 +146,30 @@ def main(_):
     if FLAGS.visualize_graph:
         import tensorflow as tf
         tf.summary.FileWriter(FLAGS.training_log_dir, learner.sess.graph)
-    learner.run()
 
+    if FLAGS.track_wandb:
+        assert FLAGS.wandb_entity is not None, "Weights and Biases entity must be specified"
+        assert FLAGS.wandb_project is not None, "Weights and Biases project must be specified"
+        assert FLAGS.wandb_group is not None, "Weights and Biases group must be specified"
+        assert FLAGS.wandb_name is not None, "Weights and Biases name must be specified"
+
+        logger.info("Tracking with Weights and Biases")
+        
+        wandb.init(
+            project=FLAGS.wandb_project,
+            entity=FLAGS.wandb_entity,
+            group=FLAGS.wandb_group,
+            name=FLAGS.wandb_name,
+            config=learner_config,
+            sync_tensorboard=True,
+            monitor_gym=True
+        )
+
+    try:
+        learner.run()
+    finally:
+        if FLAGS.track_wandb == True:
+            wandb.finish()
 
 if __name__ == '__main__':
     app.run(main)
