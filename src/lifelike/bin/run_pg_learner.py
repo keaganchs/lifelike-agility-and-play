@@ -39,11 +39,11 @@ flags.DEFINE_integer("batch_size", 4096, "Num of samples in each batch")
 flags.DEFINE_integer("rm_size", 64000, "Num of samples in replay memory")
 flags.DEFINE_integer("pub_interval", 500,
                      "freq of pub model to actors, in num of batch")
-flags.DEFINE_integer("log_interval", 100, "freq of print log, in num of batch")
+flags.DEFINE_integer("log_interval", 10000, "freq of print log, in num of batch")
 flags.DEFINE_string("training_log_dir", "training_log", "path to save log")
 flags.DEFINE_integer("save_interval", 0, "freq of save model, in num of batch")
-flags.DEFINE_integer("batch_worker_num", 4, "batch_worker_num")
-flags.DEFINE_integer("pull_worker_num", 2, "pull_worker_num")
+flags.DEFINE_integer("batch_worker_num", 16, "batch_worker_num")
+flags.DEFINE_integer("pull_worker_num", 8, "pull_worker_num")
 flags.DEFINE_integer("total_timesteps", 50000000,
                      "total time steps per learning period, "
                      "i.e., steps before adding the current model to the pool.")
@@ -69,7 +69,7 @@ flags.DEFINE_string("learner_config",
 flags.DEFINE_string("type", "PPO", "PPO|PPO2|Vtrace learner type")
 flags.DEFINE_string("data_server_version", "v1", "v2|v1")
 flags.DEFINE_boolean("decode", False, "Store decoded/encoded samples in replay memory.")
-flags.DEFINE_integer("log_infos_interval", 20,
+flags.DEFINE_integer("log_infos_interval", 2000,
                      "print infos every interval env_level")
 flags.DEFINE_integer("visualize_graph", 0,
                      "visualize the tf compute graph. 0: disable, 1: enable")
@@ -80,8 +80,9 @@ flags.DEFINE_string("WANDB__SERVICE_WAIT", "600", "fix connection issues on slow
 flags.DEFINE_string("track_wandb", "True", "Enable Weights and Biases tracking") 
 flags.DEFINE_string("wandb_entity", "keagan", "Weights and Biases entity")
 flags.DEFINE_string("wandb_project", "lifelike_agility_and_play", "Weights and Biases project")
-flags.DEFINE_string("wandb_group", "test", "Weights and Biases group")
-flags.DEFINE_string("wandb_name", "test4", "Weights and Biases name")
+flags.DEFINE_string("wandb_group", "phase_1", "Weights and Biases group")
+flags.DEFINE_string("wandb_name", "test_2", "Weights and Biases name")
+flags.DEFINE_string("wandb_notes", "Increase batch and pull worker nums", "Weights and Biases notes")
 
 def main(_):
     if HAS_HVD:
@@ -160,6 +161,7 @@ def main(_):
             entity=FLAGS.wandb_entity,
             group=FLAGS.wandb_group,
             name=FLAGS.wandb_name,
+            notes=FLAGS.wandb_notes,
             config=learner_config,
             sync_tensorboard=True,
             monitor_gym=True
