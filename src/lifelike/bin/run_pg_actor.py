@@ -52,7 +52,7 @@ flags.DEFINE_string("pure_distill_type", "standard", "pure distill type: standar
 flags.DEFINE_integer("verbose", 11,
                      "verbosity. The smaller, the noisier. Reference:"
                      "10:DEBUG, 20:INFO, 30: WARN, 40: ERROR, 50:DISABLED")
-flags.DEFINE_integer("log_interval_steps", 51,
+flags.DEFINE_integer("log_interval_steps", 5100,
                      "frequency of printing log in steps")
 flags.DEFINE_string("replay_dir", "", "replay dir when available")
 #
