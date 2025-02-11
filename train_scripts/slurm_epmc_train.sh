@@ -16,12 +16,7 @@
 srun --ntasks=1 bash example_epmc_train.sh model_pool &
 srun --ntasks=1 bash example_epmc_train.sh league_mgr &
 srun --ntasks=1 bash example_epmc_train.sh actor &
-srun --ntasks=1 bash example_epmc_train.sh learner \ 
-    --track_wandb=True \ 
-    --wandb_entity=keagan \
-    --wandb_project=lifelike_agility_and_play \
-    --wandb_group=test \
-    --wandb_name=test01 &
+srun --ntasks=1 bash example_epmc_train.sh learner &
 
 # Wait for all to finish
 wait
