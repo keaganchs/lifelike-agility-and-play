@@ -170,7 +170,8 @@ python -i -m lifelike.bin.run_pg_learner \
   --batch_worker_num=1 \
   --norwd_shape \
   --learner_config="${learner_config}" \
-  --type=PPO
+  --type=PPO \
+  --flagfile="./wandb_flagfile"
 fi
 
 #--env="${env}" \
