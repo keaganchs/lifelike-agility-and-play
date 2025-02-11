@@ -171,7 +171,8 @@ python -i -m lifelike.bin.run_pg_learner \
   --norwd_shape \
   --learner_config="${learner_config}" \
   --type=PPO \
-  --data_server_version='v3'
+  --data_server_version='v3' \
+  --flagfile="./wandb_flagfile"
 fi
 
 
