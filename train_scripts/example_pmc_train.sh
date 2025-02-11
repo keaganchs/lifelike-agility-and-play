@@ -120,17 +120,18 @@ python -i -m lifelike.bin.run_pg_learner \
   --batch_size=256 \
   --rm_size=1024 \
   --pub_interval=5 \
-  --log_interval=4 \
+  --log_interval=4000 \
   --total_timesteps=20000000000000 \
   --burn_in_timesteps=12 \
   --outer_env="${outer_env_2}" \
   --env_config="${env_config}" \
   --policy="${policy}" \
   --policy_config="${learner_policy_config}" \
-  --batch_worker_num=1 \
+  --batch_worker_num=16 \
   --norwd_shape \
   --learner_config="${learner_config}" \
-  --type=PPO
+  --type=PPO \
+  --flagfile="./wandb_flagfile"
 fi
 
 #--env="${env}" \
@@ -148,7 +149,7 @@ python -i -m lifelike.bin.run_pg_actor \
   --env_config="${env_config}" \
   --policy="${policy}" \
   --policy_config="${actor_policy_config}" \
-  --log_interval_steps=3 \
+  --log_interval_steps=300 \
   --n_v=1 \
   --rwd_shape \
   --nodistillation \
