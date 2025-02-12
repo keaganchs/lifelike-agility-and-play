@@ -5,8 +5,8 @@
 #SBATCH --error=log/out_and_err_%j.txt
 #SBATCH --partition=stud
 #SBATCH --nodes=1
-#SBATCH --ntasks=4
-#SBATCH --cpus-per-task=3
+#SBATCH --ntasks=7
+#SBATCH --cpus-per-task=2
 #SBATCH --mem-per-cpu=1000
 #SBATCH --time=23:59:59
 
