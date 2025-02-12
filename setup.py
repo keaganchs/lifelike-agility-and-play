@@ -25,6 +25,7 @@ setup(
         "matplotlib",
         "tensorflow==1.15",
         "protobuf==3.20.0",
+        "wandb",
     ],
 )
 
