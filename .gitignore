@@ -6,4 +6,4 @@ tmp*
 wandb
 *.cpython*
 *.egg-info
-*.pgn
+*.pgn   
