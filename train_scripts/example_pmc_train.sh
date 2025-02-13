@@ -153,7 +153,7 @@ python -i -m lifelike.bin.run_pg_learner \
   --wandb_project="${wandb_project}" \
   --wandb_group="${wandb_group}" \
   --wandb_name="${wandb_name}" \
-  --wandb_notes="${wandb_notes}" \
+  --wandb_notes="${wandb_notes}"
 fi
 
 #--env="${env}" \
