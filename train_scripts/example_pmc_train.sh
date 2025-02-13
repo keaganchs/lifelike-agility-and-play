@@ -76,6 +76,7 @@ env_config="{ \
   'kd': 0.5, \
   'max_tau': 18, \
   'reward_weights': {'joint_pos': 0.3, 'joint_vel': 0.05, 'end_effector': 0.1, 'root_pose': 0.5, 'root_vel': 0.05,}, \
+  'use_torque_actions': False, \
 }" && \
 
 echo "Running as ${role}"
