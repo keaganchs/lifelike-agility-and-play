@@ -13,6 +13,7 @@ from lifelike.utils.constants import (
     HANDLE_JOINT_NAMES,
 )
 
+# from tleague.utils import logger
 
 def clip_value(value, minimum, maximum):
     return max(minimum, min(value, maximum))
@@ -31,6 +32,7 @@ class LeggedRobot(object):
             foot_lateral_friction=0.5,
             max_tau=18,
             color=None,
+            use_torque_actions=False,
     ):
         """The legged robot class
 
@@ -47,6 +49,7 @@ class LeggedRobot(object):
         self._foot_lateral_friction = foot_lateral_friction
         self._max_tau = max_tau
         self._color = color
+        self._use_torque_actions = use_torque_actions
 
         robot_path = os.path.join(get_urdf_path(), 'max.urdf')
         if mode == "dynamic":
@@ -58,6 +61,8 @@ class LeggedRobot(object):
 
         self.end_effector_velocity = np.zeros((4, 3))
         self.end_effector_position = np.zeros((4, 3))
+
+        self._action_function = self.apply_torque_action if self._use_torque_actions else self.apply_position_action
 
     def set_states_info(self, states_info: Optional[Mapping[str, np.ndarray]] = None):
         """Set the states information for the robot
@@ -116,13 +121,19 @@ class LeggedRobot(object):
     def get_init_states_info():
         return STATES_INFO_12_RUN_0
 
-    def apply_action(self, tgt_joint_pos, noise=None):
+    def apply_action(self, values, noise=None, scaling_factor=1.0):
+        self._action_function(values, noise, scaling_factor)        
+        
+    def apply_position_action(self, tgt_joint_pos, noise=None, scaling_factor=None):
         """Apply torque computed from PD controller
 
         :param tgt_joint_pos: array, target joint positions
         :param noise: dict, the max noise value of the joint positions and joint velocities
+        :param scaling_factor: unused
         :return: None
         """
+        del scaling_factor
+
         max_tgt_joint_pos = np.array([3.] * tgt_joint_pos.shape[0])
         tgt_joint_pos = np.clip(tgt_joint_pos, -max_tgt_joint_pos, max_tgt_joint_pos)
         tgt_joint_vel = [0.0] * tgt_joint_pos.shape[0]
@@ -145,6 +156,28 @@ class LeggedRobot(object):
             jointIndices=self.actuated_joint_indices,
             controlMode=self._bullet_client.TORQUE_CONTROL,
             forces=taus,
+        )
+
+    def apply_torque_action(self, torques, noise=None, scaling_factor=1.0):
+        """Apply torque computed from PD controller
+
+        :param torques: array, torques to apply to each motor
+        :param noise: unused
+        :param scaling_factor: float, multiplicative scaling factor for the torques. Must be > 0.
+        :return: None
+        """
+        del noise
+
+        torques = torques * scaling_factor
+        
+        for i in range(self._num_actuated_joints):
+            torques[i] = clip_value(torques[i], -self._max_taus[i], self._max_taus[i])
+
+        self._bullet_client.setJointMotorControlArray(
+            bodyUniqueId=self.robot_id,
+            jointIndices=self.actuated_joint_indices,
+            controlMode=self._bullet_client.TORQUE_CONTROL,
+            forces=torques,
         )
 
     def get_convex_points_position(self):
