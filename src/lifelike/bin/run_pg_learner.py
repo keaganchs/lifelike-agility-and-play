@@ -42,8 +42,8 @@ flags.DEFINE_integer("pub_interval", 500,
 flags.DEFINE_integer("log_interval", 10000, "freq of print log, in num of batch")
 flags.DEFINE_string("training_log_dir", "training_log", "path to save log")
 flags.DEFINE_integer("save_interval", 0, "freq of save model, in num of batch")
-flags.DEFINE_integer("batch_worker_num", 16, "batch_worker_num")
-flags.DEFINE_integer("pull_worker_num", 8, "pull_worker_num")
+flags.DEFINE_integer("batch_worker_num", 4, "batch_worker_num")
+flags.DEFINE_integer("pull_worker_num", 2, "pull_worker_num")
 flags.DEFINE_integer("total_timesteps", 50000000,
                      "total time steps per learning period, "
                      "i.e., steps before adding the current model to the pool.")
@@ -77,12 +77,12 @@ flags.DEFINE_integer("visualize_graph", 0,
 # Fix wandb connection issues on slow clusters - https://github.com/wandb/wandb/issues/3911#issuecomment-1409769887
 flags.DEFINE_string("WANDB__SERVICE_WAIT", "600", "fix connection issues on slow clusters")
 
-flags.DEFINE_string("track_wandb", "True", "Enable Weights and Biases tracking") 
-flags.DEFINE_string("wandb_entity", "keagan", "Weights and Biases entity")
+flags.DEFINE_boolean("track_wandb", False, "Enable Weights and Biases tracking") 
+flags.DEFINE_string("wandb_entity", "", "Weights and Biases entity")
 flags.DEFINE_string("wandb_project", "lifelike_agility_and_play", "Weights and Biases project")
-flags.DEFINE_string("wandb_group", "phase_1", "Weights and Biases group")
-flags.DEFINE_string("wandb_name", "test_2", "Weights and Biases name")
-flags.DEFINE_string("wandb_notes", "Increase batch and pull worker nums", "Weights and Biases notes")
+flags.DEFINE_string("wandb_group", "", "Weights and Biases group")
+flags.DEFINE_string("wandb_name", "", "Weights and Biases name")
+flags.DEFINE_string("wandb_notes", "", "Weights and Biases notes")
 
 def main(_):
     if HAS_HVD:
@@ -98,10 +98,10 @@ def main(_):
 
     env_config = read_config_dict(FLAGS.env_config)
     if "render" in env_config:
-        env_config["render"] = False
+        env_config["render"] = False        
     if FLAGS.outer_env is not None:
-        creat_env_func = import_module_or_data(FLAGS.outer_env)
-        env = creat_env_func(**env_config)
+        create_env_func = import_module_or_data(FLAGS.outer_env)
+        env = create_env_func(**env_config)
         ob_space, ac_space = env.observation_space, env.action_space
     else:
         raise NotImplementedError("No environment defined.")
@@ -149,10 +149,10 @@ def main(_):
         tf.summary.FileWriter(FLAGS.training_log_dir, learner.sess.graph)
 
     if FLAGS.track_wandb:
-        assert FLAGS.wandb_entity is not None, "Weights and Biases entity must be specified"
-        assert FLAGS.wandb_project is not None, "Weights and Biases project must be specified"
-        assert FLAGS.wandb_group is not None, "Weights and Biases group must be specified"
-        assert FLAGS.wandb_name is not None, "Weights and Biases name must be specified"
+        assert FLAGS.wandb_entity is not None, "Weights and Biases entity must be specified with --track_wandb enabled"
+        assert FLAGS.wandb_project is not None, "Weights and Biases project must be specified with --track_wandb enabled"
+        assert FLAGS.wandb_group is not None, "Weights and Biases group must be specified with --track_wandb enabled"
+        assert FLAGS.wandb_name is not None, "Weights and Biases name must be specified with --track_wandb enabled"
 
         logger.info("Tracking with Weights and Biases")
         
