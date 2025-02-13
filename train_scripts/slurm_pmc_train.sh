@@ -5,9 +5,9 @@
 #SBATCH --error=log/out_and_err_%j.txt
 #SBATCH --partition=stud
 #SBATCH --nodes=1
-#SBATCH --ntasks=7
-#SBATCH --cpus-per-task=2
-#SBATCH --mem-per-cpu=1000
+#SBATCH --ntasks=11
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=200
 #SBATCH --time=23:59:59
 
 #SBATCH --gres=gpu:1
