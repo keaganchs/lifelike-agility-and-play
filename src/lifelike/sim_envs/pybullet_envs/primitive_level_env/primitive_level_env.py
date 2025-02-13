@@ -40,7 +40,8 @@ class PrimitiveLevelEnv(gym.Env):
                  prioritized_sample_factor=0.0,
                  set_obstacle=False,
                  obstacle_height=0.2,
-                 reward_weights=None):
+                 reward_weights=None,
+                 use_torque_actions=False):
 
         self._enable_render = enable_render
         # Outer loop controller time step
@@ -61,6 +62,8 @@ class PrimitiveLevelEnv(gym.Env):
         else:
             self._bullet_client = bullet_client.BulletClient(connection_mode=pybullet.DIRECT)
 
+        self._use_torque_actions = use_torque_actions
+
         self._legged_robot = LeggedRobot(
             bullet_client=self._bullet_client,
             time_step=self._time_step,
@@ -70,14 +73,16 @@ class PrimitiveLevelEnv(gym.Env):
             kp=kp,
             kd=kd,
             foot_lateral_friction=foot_lateral_friction,
-            max_tau=max_tau)
+            max_tau=max_tau,
+            use_torque_actions=self._use_torque_actions,)
         self._legged_robot_kin = LeggedRobot(
             bullet_client=self._bullet_client,
             time_step=0,
             mode="kinematic",
             init_pos=[0.0, 0.0, 0.5],
             init_orn=[0.0, 0.0, 0.0, 1.0],
-        )
+            use_torque_actions=self._use_torque_actions,)
+
         plane_path = os.path.join(get_urdf_path(), "plane.urdf")
         self._terrain_id = self._bullet_client.loadURDF(plane_path)
 
@@ -196,12 +201,15 @@ class PrimitiveLevelEnv(gym.Env):
         start_time = time.time()
         self._episode_steps += 1
         action = np.array(rl_action)
-        joint_pos, _ = self._legged_robot.get_joint_states_info()
-        tgt_joint_pos = np.array(joint_pos) + action
+        
+        if not self._use_torque_actions:
+            joint_pos, _ = self._legged_robot.get_joint_states_info()
+            action = np.array(joint_pos) + action
+            
         # apply inner loop action
         for _ in range(self.num_env_steps):
             self._bullet_client.setTimeStep(self._time_step)
-            self._legged_robot.apply_action(tgt_joint_pos)
+            self._legged_robot.apply_action(action)
 
             self._bullet_client.stepSimulation()
 

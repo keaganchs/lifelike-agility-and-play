@@ -31,7 +31,8 @@ class ChaseTagGameEnv(gym.Env):
                  visible_angle=np.pi,
                  obs_randomization=None,
                  env_randomize_config=None,
-                 element_config=None):
+                 element_config=None,
+                 use_torque_actions=False):
 
         self._obs_randomization = obs_randomization
         self._episodic_noise = None
@@ -47,6 +48,8 @@ class ChaseTagGameEnv(gym.Env):
         self.bullet_client.configureDebugVisualizer(self.bullet_client.COV_ENABLE_RENDERING, 1)
         self._game_mgr = GameManager(self.bullet_client, version='v4', element_config=element_config)
         self.env_randomize_config = env_randomize_config
+
+        self._use_torque_actions = use_torque_actions
 
         # Inner loop PD controller time step
         self.time_step = 1.0 / 500.0
@@ -69,7 +72,8 @@ class ChaseTagGameEnv(gym.Env):
             kd=kd,
             foot_lateral_friction=self.foot_lateral_friction,
             max_tau=max_tau,
-            color=colors[_]) for _ in range(2)]
+            color=colors[_],
+            use_torque_actions=self._use_torque_actions) for _ in range(2)]
         self.flag_id = self._create_flag()
         self.rays_casts = [RayCast(num_rays=128, len_ray=20.0, bullet_client=self.bullet_client, color=color)
                            for color in colors]
@@ -377,13 +381,16 @@ class ChaseTagGameEnv(gym.Env):
 
     def step(self, rl_actions: list):
         rl_actions = [np.array(a['A_LLC']) for a in rl_actions]
-        tgt_joint_pos = [robot.get_joint_states_info()[0] + act for act, robot in zip(rl_actions, self.legged_robots)]
+        
+        actions = rl_actions
+        if not self._use_torque_actions:
+            actions = [robot.get_joint_states_info()[0] + act for act, robot in zip(rl_actions, self.legged_robots)]
 
         # apply inner loop action
         for _ in range(self.num_env_steps):
             self.bullet_client.setTimeStep(self.time_step)
             for i in range(self.n_max):
-                self.legged_robots[i].apply_action(tgt_joint_pos[i])
+                self.legged_robots[i].apply_action(actions[i])
             self.bullet_update()
             self.time += self.time_step
         if self._enable_render:

@@ -65,6 +65,7 @@ class PlayGroundEnv(gym.Env):
                  max_steps=1000,
                  obs_randomization=None,
                  env_randomize_config=None,
+                 use_torque_actions=False,
                  ):
         self.reward_type = None
         # randomization
@@ -80,6 +81,8 @@ class PlayGroundEnv(gym.Env):
         self.bullet_client.configureDebugVisualizer(self.bullet_client.COV_ENABLE_RENDERING, 1)
         self._env_randomize_config = env_randomize_config
         self._static_objs = BulletStatics(self.bullet_client, auxiliary_radius=env_randomize_config['auxiliary_radius'])
+
+        self._use_torque_actions = use_torque_actions
 
         # Inner loop PD controller time step
         self.time_step = 1.0 / 500.0
@@ -99,7 +102,8 @@ class PlayGroundEnv(gym.Env):
             kp=kp,
             kd=kd,
             foot_lateral_friction=foot_lateral_friction,
-            max_tau=max_tau)
+            max_tau=max_tau,
+            use_torque_actions=self._use_torque_actions)
         self._target_pos = self._static_objs.get_target_pos()
         self._rays_cast = RayCast(num_rays=128, len_ray=20.0, bullet_client=self.bullet_client, color='r')
         # agent part
@@ -321,13 +325,16 @@ class PlayGroundEnv(gym.Env):
             self.target_angle = np.arctan2(dir[1], dir[0])
 
         rl_action = np.array(rl_action['A_LLC']) if 'A_LLC' in rl_action else np.array(rl_action)
-        tgt_joint_pos = self.legged_robot.get_joint_states_info()[0] + rl_action
+        
+        action = rl_action
+        if not self._use_torque_actions:
+            action = self.legged_robot.get_joint_states_info()[0] + action
 
         # apply inner loop action
         self._apply_force_curr_ctl_freq = False
         for _ in range(self._num_env_steps):
             self.bullet_client.setTimeStep(self.time_step)
-            self.legged_robot.apply_action(tgt_joint_pos)
+            self.legged_robot.apply_action(action)
             self.bullet_update()
             self.time += self.time_step
         if self._enable_render:

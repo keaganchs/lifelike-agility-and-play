@@ -40,6 +40,9 @@ def create_tracking_game(**env_config):
         obstacle_height = env_config.get("obstacle_height", 0.0)
 
         reward_weights = env_config.get("reward_weights", None)
+
+        use_torque_actions = env_config.get("use_torque_actions", False)
+
         env0 = PrimitiveLevelEnv(
             enable_render=enable_render,
             control_freq=control_freq,
@@ -56,6 +59,7 @@ def create_tracking_game(**env_config):
             set_obstacle=set_obstacle,
             obstacle_height=obstacle_height,
             reward_weights=reward_weights,
+            use_torque_actions=use_torque_actions,
         )
 
         env0 = SingleAgentWrapper(env0)
@@ -84,6 +88,7 @@ def create_playground_game(**env_config):
         max_steps = env_config["max_steps"] if "max_steps" in env_config else 1000
         obs_randomization = env_config["obs_randomization"] if "obs_randomization" in env_config else None
         env_randomize_config = env_config["env_randomize_config"] if "env_randomize_config" in env_config else None
+        use_torque_actions = env_config["use_torque_actions"] if "use_torque_actions" in env_config else False
         env0 = PlayGroundEnv(
             enable_render=enable_render,
             control_freq=control_freq,
@@ -93,6 +98,7 @@ def create_playground_game(**env_config):
             max_steps=max_steps,
             obs_randomization=obs_randomization,
             env_randomize_config=env_randomize_config,
+            use_torque_actions=use_torque_actions,
         )
         return env0
 
@@ -122,6 +128,7 @@ def create_chase_tag_game(**env_config):
         obs_randomization = env_config["obs_randomization"] if "obs_randomization" in env_config else None
         element_config = env_config.get('element_config', {})
         env_randomize_config = env_config.get('env_randomize_config', {})
+        use_torque_actions = env_config.get('use_torque_actions', False)
         env0 = ChaseTagGameEnv(
             enable_render=enable_render,
             control_freq=control_freq,
@@ -132,6 +139,7 @@ def create_chase_tag_game(**env_config):
             obs_randomization=obs_randomization,
             env_randomize_config=env_randomize_config,
             element_config=element_config,
+            use_torque_actions=use_torque_actions,
         )
 
         return env0
