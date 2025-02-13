@@ -7,6 +7,14 @@
 
 
 role=$1
+
+# Get frequently changed args as environment variables
+# Shorthand: foo="${ENV_VAR:-default_value}"
+control_freq="${CONTROL_FREQ:-50.0}" # Default 50.0
+port_offset="${PORT_OFFSET:-0}" # Defalt 0. Must be >= 2 if starting multiple runs on the same machine such that there is no communication interference
+use_torque_actions="${USE_TORQUE_ACTIONS:-False}" # Default False
+gamma="${GAMMA:-0.95}" # Default 0.95
+
 # common args
 actor_type=PPO
 outer_env=lifelike.sim_envs.pybullet_envs.create_tracking_game
@@ -19,7 +27,7 @@ mutable_hyperparam_type=ConstantHyperparam
 hyperparam_config_name="{ \
   'learning_rate': 0.00001, \
   'lam': 0.95, \
-  'gamma': 0.95, \
+  'gamma': ${gamma}, \
 }" && \
 policy=lifelike.networks.legged_robot.pmc_net.pmc_net
 learner_policy_config="{ \
@@ -68,7 +76,7 @@ env_config="{ \
   'arena_id': 'LeggedRobotTracking', \
   'render': False, \
   'data_path': '../data/mocap_data', \
-  'control_freq': 50.0, \
+  'control_freq': ${control_freq}, \
   'prop_type': ['joint_pos', 'joint_vel', 'root_ang_vel_loc', 'root_lin_vel_loc', 'e_g'], \
   'prioritized_sample_factor': 3.0, \
   'set_obstacle': True, \
@@ -76,7 +84,7 @@ env_config="{ \
   'kd': 0.5, \
   'max_tau': 18, \
   'reward_weights': {'joint_pos': 0.3, 'joint_vel': 0.05, 'end_effector': 0.1, 'root_pose': 0.5, 'root_vel': 0.05,}, \
-  'use_torque_actions': False, \
+  'use_torque_actions': ${use_torque_actions}, \
 }" && \
 
 echo "Running as ${role}"
@@ -85,7 +93,7 @@ if [ $role == model_pool ]
 then
 # model pool
 python -i -m tleague.bin.run_model_pool \
-  --ports 10003:10004 \
+  --ports $((10003 + port_offset)):$((10004 + port_offset)) \
   --verbose 0
 fi
 
@@ -93,8 +101,8 @@ fi
 if [ $role == league_mgr ]
 then
 python -i -m tleague.bin.run_league_mgr \
-  --port=20005 \
-  --model_pool_addrs=localhost:10003:10004 \
+  --port=$((20005 + port_offset)) \
+  --model_pool_addrs=localhost:$((10003 + port_offset)):$((10004 + port_offset)) \
   --game_mgr_type="${game_mgr_type}" \
   --game_mgr_config="${game_mgr_config}" \
   --mutable_hyperparam_type="${mutable_hyperparam_type}" \
@@ -112,9 +120,9 @@ fi
 if [ $role == learner ]
 then
 python -i -m lifelike.bin.run_pg_learner \
-  --learner_spec=0:30003:30004 \
-  --model_pool_addrs=localhost:10003:10004 \
-  --league_mgr_addr=localhost:20005 \
+  --learner_spec=0:$((30003 + port_offset)):$((30004 + port_offset)) \
+  --model_pool_addrs=localhost:$((10003 + port_offset)):$((10004 + port_offset)) \
+  --league_mgr_addr=localhost:$((20005 + port_offset)) \
   --learner_id=lrngrp0 \
   --unroll_length=128 \
   --rollout_length=8 \
@@ -141,9 +149,9 @@ fi
 if [ $role == actor ]
 then
 python -i -m lifelike.bin.run_pg_actor \
-  --model_pool_addrs=localhost:10003:10004 \
-  --league_mgr_addr=localhost:20005 \
-  --learner_addr=localhost:30003:30004 \
+  --model_pool_addrs=localhost:$((10003 + port_offset)):$((10004 + port_offset)) \
+  --league_mgr_addr=localhost:$((20005 + port_offset)) \
+  --learner_addr=localhost:$((30003 + port_offset)):$((30004 + port_offset)) \
   --unroll_length=128 \
   --update_model_freq=320 \
   --outer_env="${outer_env}" \
