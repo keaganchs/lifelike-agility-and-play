@@ -15,6 +15,14 @@ port_offset="${PORT_OFFSET:-0}" # Defalt 0. Must be >= 2 if starting multiple ru
 use_torque_actions="${USE_TORQUE_ACTIONS:-False}" # Default False
 gamma="${GAMMA:-0.95}" # Default 0.95
 
+# Weights and Biases args
+wandb_enable_tracking="${WANDB_ENABLE_TRACKING:-False}"
+wandb_entity="${WANDB_ENTITY:-""}"
+wandb_project="${WANDB_PROJECT:-""}"
+wandb_group="${WANDB_GROUP:-""}"
+wandb_name="${WANDB_NAME:-""}"
+wandb_notes="${WANDB_NOTES:-""}"
+
 # common args
 actor_type=PPO
 outer_env=lifelike.sim_envs.pybullet_envs.create_tracking_game
@@ -140,7 +148,12 @@ python -i -m lifelike.bin.run_pg_learner \
   --norwd_shape \
   --learner_config="${learner_config}" \
   --type=PPO \
-  --flagfile="./wandb_flagfile"
+  --track_wandb="${wandb_enable_tracking}" \
+  --wandb_entity="${wandb_entity}" \
+  --wandb_project="${wandb_project}" \
+  --wandb_group="${wandb_group}" \
+  --wandb_name="${wandb_name}" \
+  --wandb_notes="${wandb_notes}" \
 fi
 
 #--env="${env}" \

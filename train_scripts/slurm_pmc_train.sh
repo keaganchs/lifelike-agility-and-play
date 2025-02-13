@@ -20,5 +20,12 @@ export PORT_OFFSET=5
 export USE_TORQUE_ACTIONS=False
 export GAMMA=0.95
 
+export WANDB_ENABLE_TRACKING=True
+export WANDB_ENTITY=keagan
+export WANDB_PROJECT=lifelike_agility_and_play
+export WANDB_GROUP=phase_1
+export WANDB_NAME=pd_control_50_hz
+export WANDB_NOTES="Test different training frequency"
+
 # Launch all tasks concurrently using multi-program mode.
 srun --multi-prog pmc.conf

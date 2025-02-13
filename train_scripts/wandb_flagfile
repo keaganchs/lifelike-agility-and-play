@@ -1,6 +1,0 @@
---track_wandb=True
---wandb_entity=keagan
---wandb_project=lifelike_agility_and_play
---wandb_group=phase_1
---wandb_name=pd_control_1
---wandb_notes="Increase number of actors"
