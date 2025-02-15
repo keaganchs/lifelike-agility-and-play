@@ -8,10 +8,22 @@
 
 role=$1
 
+# If role is actor, accept next arg for learner_id to communicate with
+if [ $role == actor ]
+then
+  if [ -z "$2" ]
+  then
+    echo "Error: actor role requires learner_id as second argument"
+    exit 1
+  fi
+  learner_id=$2
+fi
+
+
 # Get frequently changed args as environment variables
 # Shorthand: foo="${ENV_VAR:-default_value}"
 control_freq="${CONTROL_FREQ:-50.0}" # Default 50.0
-port_offset="${PORT_OFFSET:-0}" # Defalt 0. Must be >= 2 if starting multiple runs on the same machine such that there is no communication interference
+port_offset="${PORT_OFFSET:-0}" # Defalt 0. Must be >= 2*num_learners (see var learner_spec) if starting multiple runs on the same machine such that there is no communication interference
 use_torque_actions="${USE_TORQUE_ACTIONS:-False}" # Default False
 gamma="${GAMMA:-0.95}" # Default 0.95
 
@@ -22,6 +34,24 @@ wandb_project="${WANDB_PROJECT:-""}"
 wandb_group="${WANDB_GROUP:-""}"
 wandb_name="${WANDB_NAME:-""}"
 wandb_notes="${WANDB_NOTES:-""}"
+
+# Set up multiple learners
+num_learners="${NUM_LEARNERS:-1}"
+learner_spec=""
+for ((i=0; i<num_learners; i++)); do
+  port1=$((30003 + port_offset + 2*i))
+  port2=$((30004 + port_offset + 2*i))
+  if [ $i -eq 0 ]; then
+    learner_spec="0:${port1}:${port2}"
+  else
+    learner_spec+=",0:${port1}:${port2}"
+  fi
+done
+
+# Actors will only communicate with one learner. Several actors must be started as individual jobs with the env var for actor_learner_num set to the same value as the learner's learner_id.
+# Note: num_actors must be >= num_learners, but usually one actor per learner is sufficient as the bottleneck is the learner's processing power.
+# Example: with two learners (learner_num=2), one learner process is started, and two actor processes must be started with the learner_id arg set to 0 and 1.
+actor_learner_ports="$((30003 + port_offset + 2*learner_id)):$((30004 + port_offset + 2*learner_id))"
 
 # common args
 actor_type=PPO
@@ -128,7 +158,7 @@ fi
 if [ $role == learner ]
 then
 python -i -m lifelike.bin.run_pg_learner \
-  --learner_spec=0:$((30003 + port_offset)):$((30004 + port_offset)) \
+  --learner_spec="${learner_spec}" \
   --model_pool_addrs=localhost:$((10003 + port_offset)):$((10004 + port_offset)) \
   --league_mgr_addr=localhost:$((20005 + port_offset)) \
   --learner_id=lrngrp0 \
@@ -164,7 +194,7 @@ then
 python -i -m lifelike.bin.run_pg_actor \
   --model_pool_addrs=localhost:$((10003 + port_offset)):$((10004 + port_offset)) \
   --league_mgr_addr=localhost:$((20005 + port_offset)) \
-  --learner_addr=localhost:$((30003 + port_offset)):$((30004 + port_offset)) \
+  --learner_addr=localhost:"${actor_learner_ports}" \
   --unroll_length=128 \
   --update_model_freq=320 \
   --outer_env="${outer_env}" \
