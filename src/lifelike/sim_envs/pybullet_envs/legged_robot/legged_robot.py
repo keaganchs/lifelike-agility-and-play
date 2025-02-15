@@ -121,7 +121,7 @@ class LeggedRobot(object):
     def get_init_states_info():
         return STATES_INFO_12_RUN_0
 
-    def apply_action(self, values, noise=None, scaling_factor=1.0):
+    def apply_action(self, values, noise=None, scaling_factor=18.0):
         self._action_function(values, noise, scaling_factor)        
         
     def apply_position_action(self, tgt_joint_pos, noise=None, scaling_factor=None):
@@ -158,7 +158,7 @@ class LeggedRobot(object):
             forces=taus,
         )
 
-    def apply_torque_action(self, torques, noise=None, scaling_factor=1.0):
+    def apply_torque_action(self, torques, noise=None, scaling_factor=18.0):
         """Apply torque computed from PD controller
 
         :param torques: array, torques to apply to each motor
