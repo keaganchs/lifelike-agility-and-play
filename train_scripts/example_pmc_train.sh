@@ -57,6 +57,7 @@ actor_learner_ports="$((30003 + port_offset + 2*learner_id)):$((30004 + port_off
 actor_type=PPO
 outer_env=lifelike.sim_envs.pybullet_envs.create_tracking_game
 outer_env_2=lifelike.sim_envs.pybullet_envs.create_tracking_env
+log_level=40
 
 game_mgr_type=tleague.game_mgr.game_mgrs.SelfPlayGameMgr && \
 game_mgr_config="{
@@ -132,7 +133,7 @@ then
 # model pool
 python -i -m tleague.bin.run_model_pool \
   --ports $((10003 + port_offset)):$((10004 + port_offset)) \
-  --verbose 0
+  --verbose ${log_level}
 fi
 
 # league mgr
@@ -151,7 +152,7 @@ python -i -m tleague.bin.run_league_mgr \
   --save_interval_secs=85 \
   --mute_actor_msg \
   --pseudo_learner_num=-1 \
-  --verbose=0
+  --verbose=${log_level}
 fi
 
 # learner
@@ -167,7 +168,7 @@ python -i -m lifelike.bin.run_pg_learner \
   --batch_size=256 \
   --rm_size=1024 \
   --pub_interval=5 \
-  --log_interval=4000 \
+  --log_interval=40 \
   --total_timesteps=20000000000000 \
   --burn_in_timesteps=12 \
   --outer_env="${outer_env_2}" \
@@ -201,10 +202,10 @@ python -i -m lifelike.bin.run_pg_actor \
   --env_config="${env_config}" \
   --policy="${policy}" \
   --policy_config="${actor_policy_config}" \
-  --log_interval_steps=300 \
+  --log_interval_steps=3000 \
   --n_v=1 \
   --rwd_shape \
   --nodistillation \
-  --verbose=0 \
+  --verbose=${log_level} \
   --type="${actor_type}"
 fi
