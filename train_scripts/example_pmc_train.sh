@@ -165,10 +165,10 @@ python -i -m lifelike.bin.run_pg_learner \
   --learner_id=lrngrp0 \
   --unroll_length=128 \
   --rollout_length=8 \
-  --batch_size=256 \
+  --batch_size=8192 \
   --rm_size=1024 \
   --pub_interval=5 \
-  --log_interval=40 \
+  --log_interval=400 \
   --total_timesteps=20000000000000 \
   --burn_in_timesteps=12 \
   --outer_env="${outer_env_2}" \
