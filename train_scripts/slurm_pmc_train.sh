@@ -24,7 +24,7 @@ export WANDB_ENABLE_TRACKING=True
 export WANDB_ENTITY=keagan
 export WANDB_PROJECT=lifelike_agility_and_play
 export WANDB_GROUP=phase_1
-export WANDB_NAME=pd_control_50_hz_8192_batch_size
+export WANDB_NAME=pd_control_8192_batch_size
 export WANDB_NOTES="Increase batch size to 8192"
 
 # Note: num_actors must be >= num_learners, but usually one actor per learner is sufficient as the bottleneck is the learner's processing power.
