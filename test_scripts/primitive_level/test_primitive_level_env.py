@@ -8,7 +8,7 @@ from absl import flags
 from lifelike.sim_envs.pybullet_envs.create_pybullet_envs import create_tracking_env
 from tleague.actors.agent import PGAgent
 
-flags.DEFINE_string("model_path", 'data/models/primitive_level.model', "the trained PMC model path")
+flags.DEFINE_string("model_path", 'test_scripts/primitive_level/models/test_2048_batch_workers_pd_50_hz.model', "the trained PMC model path")
 flags.DEFINE_string("data_path", 'data/mocap_data', "the mocap data path")
 
 FLAGS = flags.FLAGS
