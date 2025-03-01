@@ -164,7 +164,8 @@ def main(_):
             notes=FLAGS.wandb_notes,
             config=learner_config,
             sync_tensorboard=True,
-            monitor_gym=True
+            monitor_gym=True,
+            reinit=True
         )
 
     try:

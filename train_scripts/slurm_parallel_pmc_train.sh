@@ -5,9 +5,9 @@
 #SBATCH --error=log/out_and_err_%j.txt
 #SBATCH --partition=stud
 #SBATCH --nodes=1
-#SBATCH --ntasks=5
+#SBATCH --ntasks=4
 #SBATCH --cpus-per-task=1
-#SBATCH --mem-per-cpu=600
+#SBATCH --mem-per-cpu=2000
 #SBATCH --time=23:59:59
 
 #SBATCH --gres=gpu:1
@@ -29,9 +29,9 @@ export WANDB_NOTES="Increase batch size to 8192"
 
 # Note: num_actors must be >= num_learners, but usually one actor per learner is sufficient as the bottleneck is the learner's processing power.
 # Note: ntasks must be manually defined. Assuming one actor per learner, ntasks=3+num_learners (1 game_mgr, 1 actor, 1 learner, num_learners actors).
-# Node: make sure to update pmc_config/pmc.conf to reflect the number of tasks, and the environment variable for each actor.
+# Node: make sure to update pmc_config/parallel_pmc.conf to reflect the number of tasks, and the environment variable for each actor.
 export NUM_LEARNERS=1
 
 
 # Launch all tasks concurrently using multi-program mode.
-srun --multi-prog pmc_config/pmc.conf
+srun --multi-prog pmc_config/parallel_pmc.conf
