@@ -13,7 +13,7 @@ setup(
     packages=find_packages(where="src"),
     python_requires=">=3.5, <4",
     install_requires=[
-        "gymnasium",
+        "gymnasium==1.1",
         "numpy==1.26",
         "scipy",
         "wheel",
