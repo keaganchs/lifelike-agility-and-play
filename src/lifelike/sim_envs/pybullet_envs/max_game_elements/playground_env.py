@@ -1,10 +1,10 @@
 from collections import OrderedDict
 from collections import deque
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pybullet
-from gym import spaces
+from gymnasium import spaces
 from pybullet_utils import bullet_client
 from scipy.spatial.transform import Rotation as R
 from lifelike.sim_envs.pybullet_envs.legged_robot.legged_robot import LeggedRobot

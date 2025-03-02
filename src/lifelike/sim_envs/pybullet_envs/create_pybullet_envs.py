@@ -1,5 +1,5 @@
-import gym
-from gym.spaces import Tuple as GymTuple
+import gymnasium as gym
+from gymnasium.spaces import Tuple as GymTuple
 from lifelike.sim_envs.pybullet_envs.primitive_level_env.primitive_level_env import PrimitiveLevelEnv
 
 
