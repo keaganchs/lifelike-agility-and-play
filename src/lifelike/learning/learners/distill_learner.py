@@ -38,7 +38,7 @@ class PureDistillLearner(PGLearner):
             ob_space, ac_space, policy, gpu_id, track_wandb, data_type=DistillData, **kwargs)
 
     def _build_train_op(self):
-        params_pi = tf.trainable_variables('model')  # notice
+        params_pi = tf.compat.v1.trainable_variables('model')  # notice
         grads_and_vars = self.trainer.compute_gradients(self.loss, params_pi)
 
         grads_and_vars, self.clip_grad_norm, self.nonclip_grad_norm = self.clip_grads_vars(

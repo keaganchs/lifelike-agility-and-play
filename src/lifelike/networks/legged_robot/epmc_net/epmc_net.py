@@ -2,8 +2,11 @@ from collections import OrderedDict
 
 import lifelike.networks.layers as tair_layers
 import tensorflow as tf
-import tensorflow.compat.v1 as tfc
-import tensorflow.contrib.layers as tfc_layers
+# import tensorflow.compat.v1 as tfc
+# import tensorflow.contrib.layers as tfc_layers
+import keras
+from keras import layers
+
 import tpolicies.layers as tp_layers
 import tpolicies.losses as tp_losses
 import tpolicies.tp_utils as tp_utils
@@ -12,7 +15,7 @@ from lifelike.networks.legged_robot.epmc_net.epmc_net_data import \
     EMPCConfig, EPMCLosses
 from lifelike.networks.legged_robot.pmc_net.pmc_net import llc, _normc_initializer
 from lifelike.networks.legged_robot.pmc_net.pmc_net import llc as llc_light
-from tensorflow.contrib.framework import nest
+# from tensorflow.contrib.framework import nest
 from tpolicies.utils.distributions import DiagGaussianPdType, CategoricalPdType
 from tpolicies.utils.sequence_ops import multistep_forward_view
 from tpolicies.utils.distributions import make_pdtype
@@ -21,14 +24,14 @@ import numpy as np
 
 def _make_vars(scope) -> EPMCTrainableVariables:
     scope = scope if isinstance(scope, str) else scope.name + '/'
-    all_vars = tfc.get_collection(tfc.GraphKeys.TRAINABLE_VARIABLES, scope)
-    vf_vars = tfc.get_collection(tfc.GraphKeys.TRAINABLE_VARIABLES,
+    all_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES, scope)
+    vf_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                                  '{}.*{}'.format(scope, 'vf'))
-    pf_vars = tfc.get_collection(tfc.GraphKeys.TRAINABLE_VARIABLES,
+    pf_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                                  '{}.*{}'.format(scope, 'pol'))
-    ob_stat = tfc.get_collection(tfc.GraphKeys.GLOBAL_VARIABLES,
+    ob_stat = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.GLOBAL_VARIABLES,
                                  '{}.*{}'.format(scope, 'obfilter'))
-    lstm_vars = tfc.get_collection(tfc.GraphKeys.TRAINABLE_VARIABLES,
+    lstm_vars = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
                                    '{}.*{}'.format(scope, 'lstm_embed'))
     return EPMCTrainableVariables(
         all_vars=all_vars, vf_vars=vf_vars, pf_vars=pf_vars, ob_stat=ob_stat, lstm_vars=lstm_vars)
@@ -47,21 +50,21 @@ def epmc_inputs_placeholder(nc: EMPCConfig):
             nc.ac_space, batch_size=nc.batch_size, name='ac_ph')
 
     neglogp = tp_utils.map_gym_space_to_structure(
-        func=lambda x_sp: tf.placeholder(shape=(nc.batch_size,),
+        func=lambda x_sp: tf.compat.v1.placeholder(shape=(nc.batch_size,),
                                          dtype=tf.float32,
                                          name='neglogp'),
         gym_sp=nc.ac_space
     )
 
     n_v = nc.n_v  # no. of value heads
-    discount = tf.placeholder(tf.float32, (nc.batch_size,), 'discount')
-    r = tf.placeholder(tf.float32, (nc.batch_size, n_v), 'r')
-    ret = tf.placeholder(tf.float32, (nc.batch_size, n_v), 'R')
-    value = tf.placeholder(tf.float32, (nc.batch_size, n_v), 'V')
-    S = tf.placeholder(tf.float32, (nc.batch_size, nc.hs_len), 'hs')
-    M = tf.placeholder(tf.float32, (nc.batch_size,), 'hsm')
+    discount = tf.compat.v1.placeholder(tf.float32, (nc.batch_size,), 'discount')
+    r = tf.compat.v1.placeholder(tf.float32, (nc.batch_size, n_v), 'r')
+    ret = tf.compat.v1.placeholder(tf.float32, (nc.batch_size, n_v), 'R')
+    value = tf.compat.v1.placeholder(tf.float32, (nc.batch_size, n_v), 'V')
+    S = tf.compat.v1.placeholder(tf.float32, (nc.batch_size, nc.hs_len), 'hs')
+    M = tf.compat.v1.placeholder(tf.float32, (nc.batch_size,), 'hsm')
     flatparam = tp_utils.map_gym_space_to_structure(
-        func=lambda x_sp: tf.placeholder(shape=(nc.batch_size,) + tuple(make_pdtype(x_sp).param_shape()),
+        func=lambda x_sp: tf.compat.v1.placeholder(shape=(nc.batch_size,) + tuple(make_pdtype(x_sp).param_shape()),
                                          dtype=np.float32,),
         gym_sp=nc.ac_space
     )
@@ -80,13 +83,13 @@ def epmc_inputs_placeholder(nc: EMPCConfig):
 
 
 def percep_2d_encoder(x_2d, scope='percep_2d'):
-    with tfc.variable_scope(scope, reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope(scope, reuse=tf.compat.v1.AUTO_REUSE):
         embed = tf.expand_dims(x_2d, axis=-1)  # [B, H, W, C]
-        embed = tfc_layers.conv2d(embed, 4, [1, 1])
-        embed = tfc_layers.conv2d(embed, 4, [4, 4], stride=2)
-        embed = tfc_layers.conv2d(embed, 4, [2, 2], stride=2)
-        embed = tfc_layers.conv2d(embed, 1, [2, 2])
-        embed = tfc_layers.flatten(embed)
+        embed = layers.Conv2D(4, [1, 1])(embed)
+        embed = layers.Conv2D(4, [4, 4], stride=2)(embed)
+        embed = layers.Conv2D(4, [2, 2], stride=2)(embed)
+        embed = layers.Conv2D(1, [2, 2])(embed)
+        embed = layers.Flatten(embed)
         return embed
 
 
@@ -103,14 +106,17 @@ def periodic_padding_1d(x, padding=1):
 
 
 def percep_1d_encoder(x_1d, nc, kernel_size=4):
-    with tfc.variable_scope('percep_1d', reuse=tf.AUTO_REUSE):
+    with tf.compat.v1.variable_scope('percep_1d', reuse=tf.compat.v1.AUTO_REUSE):
         padded_x_1d = periodic_padding_1d(x_1d, padding=kernel_size)
         embed = tf.expand_dims(padded_x_1d, axis=-1)  # [B, num of words, word embed dim]
-        embed = tfc_layers.conv1d(embed, 4, kernel_size, padding='SAME')  # tfc_layers.conv1d does not support CIRCULAR
-        embed = embed[:, kernel_size:-kernel_size, :]
-        embed = tfc_layers.conv1d(embed, 4, kernel_size, stride=2)
-        embed = tfc_layers.conv1d(embed, 4, kernel_size, stride=2)
-        embed = tfc_layers.conv1d(embed, 1, kernel_size)
+        embed = layers.Conv1D(4, kernel_size, padding='SAME')(embed)  # tfc_layers.conv1d does not support CIRCULAR
+        
+        # TODO: check if this is correct for tf2
+        embed = embed[:, kernel_size:-kernel_size, :]  
+
+        embed = layers.Conv1D(4, kernel_size, stride=2)(embed)
+        embed = layers.Conv1D(4, kernel_size, stride=2)(embed)
+        embed = layers.Conv1D(1, kernel_size)(embed)
         return tf.reshape(embed, shape=(nc.batch_size, -1))
 
 
@@ -122,22 +128,21 @@ def usr_cmd_encoder(usr_cmd, nc):
     usr_cmd_all_embeds.append(percep_1d_embed)
     percep_front_embed = percep_2d_encoder(usr_cmd['percep_front'], scope='percep_front')
     usr_cmd_all_embeds.append(percep_front_embed)
-    percep_vec_embed = tfc_layers.fully_connected(usr_cmd['target'], 32,
-                                                  activation_fn=nc.main_activation_func_op)
+    percep_vec_embed = layers.Dense(32, activation=nc.main_activation_func_op)(usr_cmd['target'])
     usr_cmd_all_embeds = [percep_vec_embed] + usr_cmd_all_embeds
     usr_cmd_embed = tf.concat(usr_cmd_all_embeds, axis=-1)
-    usr_cmd_embed = tfc_layers.fully_connected(usr_cmd_embed, nc.bot_neck_prop_embed_size,
-                                               activation_fn=nc.main_activation_func_op)
+    usr_cmd_embed = layers.Dense(nc.bot_neck_prop_embed_size,
+                                    activation=nc.main_activation_func_op)(usr_cmd_embed)
     return usr_cmd_embed
 
 
 def mlc_encoder(prop, usr_cmd, hs, m, nc):
-    with tfc.variable_scope('mlc_encoder', reuse=tf.AUTO_REUSE):
-        prop_embed = tfc_layers.fully_connected(prop, nc.bot_neck_prop_embed_size,
-                                                activation_fn=nc.main_activation_func_op)
+    with tf.compat.v1.variable_scope('mlc_encoder', reuse=tf.compat.v1.AUTO_REUSE):
+        prop_embed = layers.Dense(nc.bot_neck_prop_embed_size,
+                                    activation=nc.main_activation_func_op)(prop)
         usr_cmd_embed = usr_cmd_encoder(usr_cmd, nc)
         embed = tf.concat([prop_embed, usr_cmd_embed], axis=-1)
-        embed = tfc_layers.fully_connected(embed, nc.embed_dim, activation_fn=nc.main_activation_func_op)
+        embed = layers.Dense(nc.embed_dim, activation=nc.main_activation_func_op)(embed)
         if nc.expert_lstm:
             lstm_embed, hs_new = tp_layers.lstm_embed_block(
                 inputs_x=embed,
@@ -145,19 +150,19 @@ def mlc_encoder(prop, usr_cmd, hs, m, nc):
                 inputs_mask=m,
                 nc=nc)
         else:
-            lstm_embed = tfc_layers.fully_connected(embed, nc.embed_dim, activation_fn=nc.main_activation_func_op)
+            lstm_embed = layers.Dense(nc.embed_dim, activation=nc.main_activation_func_op)(embed)
             hs_new = tf.zeros(shape=(nc.nrollout, nc.hs_len))
         if nc.discrete_z:
-            z_logits = tfc_layers.fully_connected(lstm_embed, nc.z_len, activation_fn=None)
+            z_logits = layers.Dense(nc.z_len, activation=None)(lstm_embed)
             z_head = tp_layers.to_action_head(z_logits, CategoricalPdType)
         else:
-            z_mu = tfc_layers.fully_connected(lstm_embed, nc.z_len, activation_fn=None)
+            z_mu = layers.Dense(nc.z_len, activation=None)(lstm_embed)
             if nc.isolate_z_logvar:
-                z_logvar = tf.get_variable(name='logvar', shape=(1, nc.z_len),
-                                           initializer=tf.constant_initializer(nc.z_logvar_init))
+                z_logvar = tf.compat.v1.get_variable(name='logvar', shape=(1, nc.z_len),
+                                           initializer=tf.compat.v1.constant_initializer(nc.z_logvar_init))
                 z_logvar = tf.tile(z_logvar, [nc.batch_size, 1])
             else:
-                z_logvar = tfc_layers.fully_connected(lstm_embed, nc.z_len, activation_fn=None)
+                z_logvar = layers.Dense(nc.z_len, activation=None)(lstm_embed)
             pdparams = tf.concat([z_mu, z_mu * 0.0 + z_logvar], axis=1)
             z_head = tp_layers.to_action_head(pdparams, DiagGaussianPdType)
     return z_head, hs_new
@@ -165,12 +170,12 @@ def mlc_encoder(prop, usr_cmd, hs, m, nc):
 
 def mapping_z(encoding_indices, z_len, num_embeddings):
     #  https://github.com/deepmind/sonnet/blob/v1/sonnet/python/modules/nets/vqvae.py
-    codebook = tf.get_variable(name='embedding', shape=(z_len, num_embeddings),
-                               initializer=tf.uniform_unit_scaling_initializer, trainable=True)
+    codebook = tf.compat.v1.get_variable(name='embedding', shape=(z_len, num_embeddings),
+                               initializer=tf.compat.v1.uniform_unit_scaling_initializer, trainable=True)
     encodings = tf.one_hot(encoding_indices, num_embeddings)
     with tf.control_dependencies([encoding_indices]):
-        w_trans = tf.transpose(codebook.read_value(), [1, 0])
-        quantized = tf.nn.embedding_lookup(w_trans, encoding_indices, validate_indices=False)
+        w_trans = tf.transpose(a=codebook.read_value(), perm=[1, 0])
+        quantized = tf.nn.embedding_lookup(params=w_trans, ids=encoding_indices)
     return quantized, encodings
 
 
@@ -178,7 +183,7 @@ def epmc_net(inputs: EPMCInputs,
              nc: EMPCConfig,
              scope=None) -> EPMCOutputs:
     """create the whole net for CutTrackingZ"""
-    with tfc.variable_scope(scope, default_name='model') as sc:
+    with tf.compat.v1.variable_scope(scope, default_name='model') as sc:
         # lstm related
         # nc_lstm = deepcopy(nc) # deepcopy raises Error when using multi-GPU & hvd
         assert nc.hs_len % 3 == 0, 'Use separate pi and vf lstm networks, and z'
@@ -212,7 +217,7 @@ def epmc_net(inputs: EPMCInputs,
 
         # obs normalization
         if nc.rms_momentum is not None:
-            with tfc.variable_scope(nc.llc_param_type + '/rms'):
+            with tf.compat.v1.variable_scope(nc.llc_param_type + '/rms'):
                 ob, _ = tair_layers.rms(prop, momentum=nc.rms_momentum)
                 ob_rms = tf.clip_by_value(tf.stop_gradient(ob), -5.0, 5.0)
                 prop_rms = ob_rms
@@ -224,33 +229,33 @@ def epmc_net(inputs: EPMCInputs,
 
         # value
         if nc.use_value_head:
-            with tfc.variable_scope('vf'):
-                last_out_vf1 = tfc.nn.tanh(tfc.layers.dense(prop_rms_extended, nc.embed_dim // 2, name="fc1",
-                                                            kernel_initializer=_normc_initializer(1.0)))
+            with tf.compat.v1.variable_scope('vf'):
+                last_out_vf1 = tf.compat.v1.nn.tanh(layers.Dense(nc.embed_dim // 2, name="fc1",
+                                                            kernel_initializer=_normc_initializer(1.0))(prop_rms_extended))
                 usr_cmd_vf = usr_cmd_encoder(usr_cmd_vf, nc)
-                last_out_vf2 = tfc.nn.tanh(tfc.layers.dense(usr_cmd_vf, nc.embed_dim // 2, name="fc2",
-                                                            kernel_initializer=_normc_initializer(1.0)))
+                last_out_vf2 = tf.compat.v1.nn.tanh(layers.Dense(nc.embed_dim // 2, name="fc2",
+                                                            kernel_initializer=_normc_initializer(1.0))(usr_cmd_vf))
                 last_out_vf = tf.concat([last_out_vf1, last_out_vf2], axis=-1)
-                last_out_vf = tfc.nn.tanh(tfc.layers.dense(last_out_vf, nc.embed_dim, name="fc3",
-                                                           kernel_initializer=_normc_initializer(1.0)))
+                last_out_vf = tf.compat.v1.nn.tanh(layers.Dense(nc.embed_dim, activation='tanh', name="fc3",
+                                                           kernel_initializer=_normc_initializer(1.0))(last_out_vf))
                 lstm_embed_vf, hs_vf_new = tp_layers.lstm_embed_block(
                     inputs_x=last_out_vf,
                     inputs_hs=hs_vf,
                     inputs_mask=inputs.M,
                     nc=nc)
-                vf = tfc.layers.dense(lstm_embed_vf, nc.n_v, name='value', kernel_initializer=_normc_initializer(1.0))
+                vf = layers.Dense(nc.n_v, name='value', kernel_initializer=_normc_initializer(1.0))(lstm_embed_vf)
         else:
             vf = 0
             hs_vf_new = hs_vf
 
         self_fed_heads, outer_fed_heads = None, None
-        with tfc.variable_scope('expert_pi'):
+        with tf.compat.v1.variable_scope('expert_pi'):
             if nc.use_self_fed_heads:
                 z_head, hs_z_new = mlc_encoder(prop_rms_extended, usr_cmd_pi, hs_z, inputs.M, nc)
                 z_curr = z_head.sam
-                with tfc.variable_scope(nc.llc_param_type):
+                with tf.compat.v1.variable_scope(nc.llc_param_type):
                     if nc.discrete_z:
-                        with tfc.variable_scope('llc'):
+                        with tf.compat.v1.variable_scope('llc'):
                             z_curr, encodings = mapping_z(z_curr, z_len=nc.z_len_llc, num_embeddings=nc.z_len)
                     if nc.llc_light:
                         llc_head, hs_pi_new = llc_light(prop_rms, z_curr, nc), tf.zeros_like(hs_vf_new)
@@ -263,9 +268,9 @@ def epmc_net(inputs: EPMCInputs,
                 assert flag, ('creating outer_fed_heads, '
                               'but outer fed heads are None ...')
                 z_curr = inputs.A['A_Z']
-                with tfc.variable_scope(nc.llc_param_type):
+                with tf.compat.v1.variable_scope(nc.llc_param_type):
                     if nc.discrete_z:
-                        with tfc.variable_scope('llc'):
+                        with tf.compat.v1.variable_scope('llc'):
                             z_curr, encodings = mapping_z(z_curr, z_len=nc.z_len_llc, num_embeddings=nc.z_len)
                     if nc.llc_light:
                         llc_head, hs_pi_new = llc_light(prop_rms, z_curr, nc), tf.zeros_like(hs_vf_new)
@@ -277,13 +282,13 @@ def epmc_net(inputs: EPMCInputs,
 
         # make loss
         loss = None
-        with tf.variable_scope('losses'):
+        with tf.compat.v1.variable_scope('losses'):
             # regularization loss
-            total_reg_loss = tfc.losses.get_regularization_losses(scope=sc.name)
+            total_reg_loss = tf.compat.v1.losses.get_regularization_losses(scope=sc.name)
             if nc.use_loss_type in ['rl', 'ppo', 'ppo2']:
                 # ppo loss
                 example_ac_sp = tp_utils.map_gym_space_to_structure(lambda x: None, nc.ac_space)
-                outer_fed_head_neglogp = nest.map_structure_up_to(
+                outer_fed_head_neglogp = tf.compat.v1.nest.map_structure_up_to(
                     example_ac_sp,
                     lambda head, ac: head.pd.neglogp(ac),
                     outer_fed_heads,
@@ -302,17 +307,17 @@ def epmc_net(inputs: EPMCInputs,
                         sync_statistics=nc.sync_statistics,
                         clip_range_lower=nc.clip_range_lower,
                     )
-                    pg_loss = tf.reduce_mean(pg_loss)
-                    value_loss = tf.reduce_mean(value_loss)
+                    pg_loss = tf.reduce_mean(input_tensor=pg_loss)
+                    value_loss = tf.reduce_mean(input_tensor=value_loss)
                 elif nc.use_loss_type == 'ppo2':
                     def _batch_to_tb(tsr):
-                        return tf.transpose(tf.reshape(
+                        return tf.transpose(a=tf.reshape(
                             tsr, shape=(nc.nrollout, nc.rollout_len)))
 
                     neglogp_list = [_batch_to_tb(neglogp)
-                                    for neglogp in nest.flatten(outer_fed_head_neglogp)]
+                                    for neglogp in tf.compat.v1.nest.flatten(outer_fed_head_neglogp)]
                     oldneglogp_list = [_batch_to_tb(oldneglogp)
-                                       for oldneglogp in nest.flatten(inputs.neglogp)]
+                                       for oldneglogp in tf.compat.v1.nest.flatten(inputs.neglogp)]
 
                     vpred_list = [_batch_to_tb(v) for v in tf.split(vf, nc.n_v, axis=1)]
                     reward_list = [_batch_to_tb(r) for r in tf.split(inputs.r, nc.n_v, axis=1)]
@@ -331,7 +336,7 @@ def epmc_net(inputs: EPMCInputs,
                         # r_norm = tf.split(inputs.r, nc.n_v, axis=1)[:-1] + tf.split(r_norm, nc.n_v, axis=1)[-1:]
                         # reward_list = [_batch_to_tb(r) for r in r_norm]
                         # reward_weights size should be consistent with n_v
-                        reward_weights = tf.squeeze(tf.convert_to_tensor(nc.reward_weights, tf.float32))
+                        reward_weights = tf.squeeze(tf.convert_to_tensor(value=nc.reward_weights, dtype=tf.float32))
                         assert reward_weights.shape.as_list()[0] == len(reward_list), (
                             'For ppo2 loss, reward_weight size must be the same with number of'
                             ' value head: each reward_weight element must correspond to one '
@@ -343,7 +348,7 @@ def epmc_net(inputs: EPMCInputs,
 
                     # lambda for td-lambda or lambda-return
                     assert nc.lam is not None, 'building rl_ppo2, but lam for lambda-return is None.'
-                    lam = tf.convert_to_tensor(nc.lam, tf.float32)
+                    lam = tf.convert_to_tensor(value=nc.lam, dtype=tf.float32)
 
                     # for each value-head, compute the corresponding policy gradient loss
                     # and the value loss
@@ -375,13 +380,13 @@ def epmc_net(inputs: EPMCInputs,
                             for neglogp, oldneglogp in zip(
                                 neglogp_list, oldneglogp_list)
                         ]
-                        pg_loss.append(tf.reduce_sum(pg_loss_per_vh))
+                        pg_loss.append(tf.reduce_sum(input_tensor=pg_loss_per_vh))
                         # compute the value loss for this value-head
-                        value_head_loss = tf.reduce_mean(0.5 * tf.square(R - vpred[:-1]))
+                        value_head_loss = tf.reduce_mean(input_tensor=0.5 * tf.square(R - vpred[:-1]))
                         value_loss.append(value_head_loss)
                     # normally pg_loss has two dims [n_head, n_v], absorbing with merge_pi and reward_weights
-                    pg_loss = tf.reduce_sum(tf.stack(pg_loss) * reward_weights)
-                    value_loss = tf.reduce_sum(tf.stack(value_loss) * reward_weights)
+                    pg_loss = tf.reduce_sum(input_tensor=tf.stack(pg_loss) * reward_weights)
+                    value_loss = tf.reduce_sum(input_tensor=tf.stack(value_loss) * reward_weights)
                 else:
                     raise NotImplementedError('Unknown loss type.')
 
@@ -389,7 +394,7 @@ def epmc_net(inputs: EPMCInputs,
                 distill_loss = None
                 if nc.distillation:
                     distill_loss = tf.zeros(shape=())
-                    outer_fed_head_pds = nest.map_structure_up_to(example_ac_sp, lambda head: head.pd, outer_fed_heads)
+                    outer_fed_head_pds = tf.compat.v1.nest.map_structure_up_to(example_ac_sp, lambda head: head.pd, outer_fed_heads)
                     # distill_loss = tp_losses.distill_loss(
                     #     student_pds=outer_fed_head_pds,
                     #     teacher_logits=inputs.flatparam)
@@ -405,14 +410,14 @@ def epmc_net(inputs: EPMCInputs,
                         distill_loss += z_distill_loss
 
                 # entropy loss
-                entropy_loss = nest.map_structure_up_to(
-                    example_ac_sp, lambda head: tf.reduce_mean(head.ent), outer_fed_heads)
-                loss_endpoints = {'pg_loss': tf.reduce_mean(pg_loss),
-                                  'value_loss': tf.reduce_mean(value_loss),
+                entropy_loss = tf.compat.v1.nest.map_structure_up_to(
+                    example_ac_sp, lambda head: tf.reduce_mean(input_tensor=head.ent), outer_fed_heads)
+                loss_endpoints = {'pg_loss': tf.reduce_mean(input_tensor=pg_loss),
+                                  'value_loss': tf.reduce_mean(input_tensor=value_loss),
                                   'z_head_entropy': entropy_loss['A_Z'],
                                   'llc_head_entropy': entropy_loss['A_LLC'],
 
-                                  'return': tf.reduce_mean(tf.reduce_mean(vf) if nc.use_loss_type == 'ppo2' else
+                                  'return': tf.reduce_mean(input_tensor=tf.reduce_mean(input_tensor=vf) if nc.use_loss_type == 'ppo2' else
                                                            inputs.R),
                                   # 'rms_loss': tf.reduce_mean(rms_loss),
                                   }
@@ -430,16 +435,16 @@ def epmc_net(inputs: EPMCInputs,
                         })
 
                 if nc.discrete_z:
-                    avg_probs = tf.reduce_mean(encodings, 0)
-                    perplexity = tf.exp(- tf.reduce_sum(avg_probs * tf.log(avg_probs + 1e-10)))
+                    avg_probs = tf.reduce_mean(input_tensor=encodings, axis=0)
+                    perplexity = tf.exp(- tf.reduce_sum(input_tensor=avg_probs * tf.math.log(avg_probs + 1e-10)))
                     loss_endpoints.update({
-                        'perplexity': tf.reduce_mean(perplexity),
+                        'perplexity': tf.reduce_mean(input_tensor=perplexity),
                     })
                 else:
                     loss_endpoints.update({
-                        'z_curr': tf.reduce_mean(z_curr),
-                        'mu': tf.reduce_mean(z_head.pd.mean),
-                        'logvar': tf.reduce_mean(z_head.pd.logstd),
+                        'z_curr': tf.reduce_mean(input_tensor=z_curr),
+                        'mu': tf.reduce_mean(input_tensor=z_head.pd.mean),
+                        'logvar': tf.reduce_mean(input_tensor=z_head.pd.logstd),
                     })
 
                 loss = EPMCLosses(
@@ -461,14 +466,14 @@ def epmc_net(inputs: EPMCInputs,
                 teacher_z_head = tp_layers.to_action_head(inputs.flatparam['A_Z'], CategoricalPdType)
                 distill_loss = z_head.pd.kl(teacher_z_head.pd)
 
-                avg_probs = tf.reduce_mean(encodings, 0)
-                perplexity = tf.exp(- tf.reduce_sum(avg_probs * tf.log(avg_probs + 1e-10)))
+                avg_probs = tf.reduce_mean(input_tensor=encodings, axis=0)
+                perplexity = tf.exp(- tf.reduce_sum(input_tensor=avg_probs * tf.math.log(avg_probs + 1e-10)))
 
-                loss_endpoints = {'pg_loss': tf.reduce_mean(pg_loss),
-                                  'value_loss': tf.reduce_mean(value_loss),
-                                  'entropy_loss': tf.reduce_mean(entropy_loss),
-                                  'distill_loss': tf.reduce_mean(distill_loss),
-                                  'perplexity': tf.reduce_mean(perplexity),
+                loss_endpoints = {'pg_loss': tf.reduce_mean(input_tensor=pg_loss),
+                                  'value_loss': tf.reduce_mean(input_tensor=value_loss),
+                                  'entropy_loss': tf.reduce_mean(input_tensor=entropy_loss),
+                                  'distill_loss': tf.reduce_mean(input_tensor=distill_loss),
+                                  'perplexity': tf.reduce_mean(input_tensor=perplexity),
                                   }
                 loss = EPMCLosses(
                     total_reg_loss=total_reg_loss,

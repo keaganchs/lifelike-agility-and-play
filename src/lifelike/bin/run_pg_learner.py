@@ -146,7 +146,7 @@ def main(_):
 
     if FLAGS.visualize_graph:
         import tensorflow as tf
-        tf.summary.FileWriter(FLAGS.training_log_dir, learner.sess.graph)
+        tf.compat.v1.summary.FileWriter(FLAGS.training_log_dir, learner.sess.graph)
 
     if FLAGS.track_wandb:
         assert FLAGS.wandb_entity is not None, "Weights and Biases entity must be specified with --track_wandb enabled"

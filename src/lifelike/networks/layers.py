@@ -31,29 +31,29 @@ def rms(inputs,
     Returns:
       A tensor with the same shape and data dtype as `inputs`.
     """
-    with tf.variable_scope(scope, default_name="rms"):
+    with tf.compat.v1.variable_scope(scope, default_name="rms"):
         inputs_shape = inputs.get_shape()
         params_shape = inputs_shape[begin_norm_axis + 1:]
 
         if moving_mean_initializer:
-            moving_mean = tf.get_variable("moving_mean", (1,) + params_shape,
+            moving_mean = tf.compat.v1.get_variable("moving_mean", (1,) + params_shape,
                                           initializer=moving_mean_initializer,
                                           trainable=trainable)
         else:
-            moving_mean = tf.get_variable("moving_mean", (1,) + params_shape,
-                                          initializer=tf.zeros_initializer(),
+            moving_mean = tf.compat.v1.get_variable("moving_mean", (1,) + params_shape,
+                                          initializer=tf.compat.v1.zeros_initializer(),
                                           trainable=trainable)
         if moving_std_initializer:
-            moving_std = tf.get_variable("moving_std", (1,) + params_shape,
+            moving_std = tf.compat.v1.get_variable("moving_std", (1,) + params_shape,
                                          initializer=moving_std_initializer,
                                          trainable=trainable)
         else:
-            moving_std = tf.get_variable("moving_std", (1,) + params_shape,
-                                         initializer=tf.ones_initializer(),
+            moving_std = tf.compat.v1.get_variable("moving_std", (1,) + params_shape,
+                                         initializer=tf.compat.v1.ones_initializer(),
                                          trainable=trainable)
 
         outputs = (inputs - moving_mean) / (moving_std + 1e-8)
-        mean, variance = tf.nn.moments(inputs, axes=list(range(begin_norm_axis + 1)))
+        mean, variance = tf.nn.moments(x=inputs, axes=list(range(begin_norm_axis + 1)))
         rms_loss = 0.5 * momentum * (tf.square(moving_mean - tf.stop_gradient(mean)) +
                                      tf.square(moving_std - tf.stop_gradient(tf.sqrt(variance))))
 
