@@ -50,11 +50,11 @@ for ((i=0; i<num_learners; i++)); do
   fi
 done
 
-if [ -z "$wandb_run_name" ]
+if [ -z "$wandb_name" ]
 then
   learner_name="lrngrp0"
 else
-  learner_name="${wandb_run_name}"
+  learner_name="${wandb_name}"
 fi
 
 # Actors will only communicate with one learner. Several actors must be started as individual jobs with the env var for actor_learner_num set to the same value as the learner's learner_id.
