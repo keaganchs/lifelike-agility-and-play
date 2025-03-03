@@ -27,6 +27,8 @@ port_offset="${PORT_OFFSET:-0}" # Defalt 0. Must be >= 2*num_learners (see var l
 use_torque_actions="${USE_TORQUE_ACTIONS:-False}" # Default False
 gamma="${GAMMA:-0.95}" # Default 0.95
 
+gpu_id="${GPU_ID:-0}" # Default 0
+
 # Weights and Biases args
 wandb_enable_tracking="${WANDB_ENABLE_TRACKING:-False}"
 wandb_entity="${WANDB_ENTITY:-""}"
@@ -35,18 +37,25 @@ wandb_group="${WANDB_GROUP:-""}"
 wandb_name="${WANDB_NAME:-""}"
 wandb_notes="${WANDB_NOTES:-""}"
 
-# Set up multiple learners
+# Set up multiple learners on one GPU
 num_learners="${NUM_LEARNERS:-1}"
 learner_spec=""
 for ((i=0; i<num_learners; i++)); do
   port1=$((30003 + port_offset + 2*i))
   port2=$((30004 + port_offset + 2*i))
   if [ $i -eq 0 ]; then
-    learner_spec="0:${port1}:${port2}"
+    learner_spec="${gpu_id}:${port1}:${port2}"
   else
-    learner_spec+=",0:${port1}:${port2}"
+    learner_spec+=",${gpu_id}:${port1}:${port2}"
   fi
 done
+
+if [ -z "$wandb_run_name" ]
+then
+  learner_name="lrngrp0"
+else
+  learner_name="${wandb_run_name}"
+fi
 
 # Actors will only communicate with one learner. Several actors must be started as individual jobs with the env var for actor_learner_num set to the same value as the learner's learner_id.
 # Note: num_actors must be >= num_learners, but usually one actor per learner is sufficient as the bottleneck is the learner's processing power.
@@ -90,7 +99,7 @@ actor_policy_config="{ \
   'batch_size': 1, \
   'rollout_len': 1, \
   'test': True, \
-  'use_loss_type': 'none', \
+  'use_loss_type': 'none', \  
   'z_prior_type': 'VQ', \
   'use_value_head': True, \
   'rms_momentum': 0.0001, \
@@ -162,13 +171,13 @@ python -i -m lifelike.bin.run_pg_learner \
   --learner_spec="${learner_spec}" \
   --model_pool_addrs=localhost:$((10003 + port_offset)):$((10004 + port_offset)) \
   --league_mgr_addr=localhost:$((20005 + port_offset)) \
-  --learner_id=lrngrp0 \
+  --learner_id="${learner_name}" \
   --unroll_length=128 \
   --rollout_length=8 \
   --batch_size=8192 \
   --rm_size=1024 \
   --pub_interval=5 \
-  --log_interval=4000 \
+  --log_interval=400 \
   --total_timesteps=20000000000000 \
   --burn_in_timesteps=12 \
   --outer_env="${outer_env_2}" \
