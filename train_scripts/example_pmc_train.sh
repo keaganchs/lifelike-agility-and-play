@@ -93,7 +93,7 @@ actor_policy_config="{ \
   'batch_size': 1, \
   'rollout_len': 1, \
   'test': True, \
-  'use_loss_type': 'none', \  
+  'use_loss_type': 'none', \
   'z_prior_type': 'VQ', \
   'use_value_head': True, \
   'rms_momentum': 0.0001, \
