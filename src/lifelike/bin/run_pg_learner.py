@@ -10,6 +10,7 @@ from tleague.learners.ppo_learner3 import PPOLearner
 from lifelike.learning.learners.distill_learner import PureDistillLearner
 from tleague.utils import read_config_dict
 from tleague.utils import import_module_or_data
+import tensorflow as tf
 
 import wandb
 
@@ -85,6 +86,8 @@ flags.DEFINE_string("wandb_name", "", "Weights and Biases name")
 flags.DEFINE_string("wandb_notes", "", "Weights and Biases notes")
 
 def main(_):
+    tf.compat.v1.disable_eager_execution()
+
     if HAS_HVD:
         hvd.init()
 
@@ -145,7 +148,6 @@ def main(_):
                             **learner_config)
 
     if FLAGS.visualize_graph:
-        import tensorflow as tf
         tf.compat.v1.summary.FileWriter(FLAGS.training_log_dir, learner.sess.graph)
 
     if FLAGS.track_wandb:
