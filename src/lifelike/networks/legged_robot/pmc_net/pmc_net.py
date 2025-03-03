@@ -56,8 +56,7 @@ def decoder(x, nc):
         embed = layers.Dense(nc.embed_dim, activation=nc.main_activation_func_op)(x)
         embed = layers.Dense(nc.embed_dim, activation=nc.main_activation_func_op)(embed)
         out = layers.Dense(12, activation=None,
-                                weights_initializer=_normc_initializer(0.01),
-                                scope='mean')(embed)
+                                kernel_initializer=_normc_initializer(0.01))(embed) # TF2 migration: removed scope='mean'
     return out
 
 
