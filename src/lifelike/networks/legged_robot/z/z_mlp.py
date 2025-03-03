@@ -90,7 +90,7 @@ def mlp_decoder(x, nc):
         embed = layers.Dense(nc.dec_dim, activation='relu')(embed)
         out = layers.Dense(nc.ac_space.shape[0],
                             activation=None,
-                            weights_initializer=_normc_initializer(0.01),
+                            kernel_initializer=_normc_initializer(0.01),
                             scope='mean')(embed)
     return out
 
