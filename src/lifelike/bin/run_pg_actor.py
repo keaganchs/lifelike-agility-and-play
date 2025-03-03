@@ -10,6 +10,8 @@ from tleague.utils import read_config_dict
 from tleague.utils import import_module_or_data
 from tleague.utils import kill_sc2_processes_v2
 
+import tensorflow as tf
+
 FLAGS = flags.FLAGS
 flags.DEFINE_string("league_mgr_addr", "localhost:10005",
                     "League manager address.")
@@ -66,6 +68,8 @@ flags.DEFINE_string("data_server_version", "v2", "v2|v1")
 
 
 def main(_):
+    tf.compat.v1.disable_eager_execution()
+
     if FLAGS.replay_dir:
         os.makedirs(FLAGS.replay_dir, exist_ok=True)
 
