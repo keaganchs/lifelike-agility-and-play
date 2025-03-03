@@ -50,6 +50,13 @@ for ((i=0; i<num_learners; i++)); do
   fi
 done
 
+if [ -z "$wandb_name" ]
+then
+  learner_name="lrngrp0"
+else
+  learner_name="${wandb_name}"
+fi
+
 
 # Actors will only communicate with one learner. Several actors must be started as individual jobs with the env var for actor_learner_num set to the same value as the learner's learner_id.
 # Note: num_actors must be >= num_learners, but usually one actor per learner is sufficient as the bottleneck is the learner's processing power.
@@ -165,7 +172,7 @@ python -i -m lifelike.bin.run_pg_learner \
   --learner_spec="${learner_spec}" \
   --model_pool_addrs=localhost:$((10003 + port_offset)):$((10004 + port_offset)) \
   --league_mgr_addr=localhost:$((20005 + port_offset)) \
-  --learner_id=lrngrp0 \
+  --learner_id="${learner_name}" \
   --unroll_length=128 \
   --rollout_length=8 \
   --batch_size=8192 \
