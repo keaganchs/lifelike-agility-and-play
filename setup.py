@@ -26,6 +26,7 @@ setup(
         "tensorflow==2.9",
         "protobuf==3.20.0",
         "wandb",
+        "dm-tree", # For TF2 migration: https://github.com/tensorflow/tensorflow/issues/33748
     ],
 )
 
