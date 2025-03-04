@@ -14,10 +14,10 @@ from keras import layers
 
 from tpolicies.utils.distributions import DiagGaussianPdType
 
-import tairlearning.networks.layers as tair_layers
-from tairlearning.networks.legged_robot.z.rnn.z_lstm_mlp_data import ZLSTMMLPInputs, ZLSTMMLPOutputs, \
+import lifelike.networks.layers as tair_layers
+from lifelike.networks.legged_robot.z.rnn.z_lstm_mlp_data import ZLSTMMLPInputs, ZLSTMMLPOutputs, \
     ZLSTMMLPTrainableVariables, ZLSTMMLPLosses, ZLSTMMLPConfig
-from tairlearning.networks.utils import _normc_initializer
+from lifelike.networks.utils import _normc_initializer
 
 
 def _make_vars(scope) -> ZLSTMMLPTrainableVariables:
@@ -85,10 +85,11 @@ def mlp_decoder(x, nc):
         embed = layers.Dense(nc.dec_dim, activation='tanh')(x)
         embed = layers.Dense(nc.dec_dim, activation='tanh')(embed)
         embed = layers.Dense(nc.dec_dim, activation='tanh')(embed)
-        out = layers.Dense(nc.ac_space.shape[0],
-                                         activation=None,
-                                         weights_initializer=_normc_initializer(0.01),
-                                         scope='mean')(embed)
+        
+        with tf.compat.v1.variable_scope('mean', reuse=tf.compat.v1.AUTO_REUSE):
+            out = layers.Dense(nc.ac_space.shape[0],
+                               activation=None,
+                               kernel_initializer=_normc_initializer(0.01))(embed) # TF2 Migraitoin: remove scope 'mean'
     return out
 
 
