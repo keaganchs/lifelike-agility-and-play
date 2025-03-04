@@ -88,10 +88,11 @@ def mlp_decoder(x, nc):
         embed = layers.Dense(nc.dec_dim, activation='relu')(x)
         embed = layers.Dense(nc.dec_dim, activation='relu')(embed)
         embed = layers.Dense(nc.dec_dim, activation='relu')(embed)
-        out = layers.Dense(nc.ac_space.shape[0],
-                            activation=None,
-                            kernel_initializer=_normc_initializer(0.01),
-                            scope='mean')(embed)
+        
+        with tf.compat.v1.variable_scope('mean', reuse=tf.compat.v1.AUTO_REUSE):
+            out = layers.Dense(nc.ac_space.shape[0],
+                               activation=None,
+                               kernel_initializer=_normc_initializer(0.01))(embed) # TF2 Migration: remove scope 'mean'
     return out
 
 
