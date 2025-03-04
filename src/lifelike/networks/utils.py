@@ -1,12 +1,15 @@
 import collections
 import numpy as np
 import tensorflow as tf
+
+import keras
+
 try:
     from mpi4py import MPI
 except ImportError:
     print('WARN: cannot import mpi4py successfully.')
 
-
+# Deprecated, for use with TF1
 def _normc_initializer(std=1.0):
     def _initializer(shape, dtype=None, partition_info=None):  # pylint: disable=W0613
         out = np.random.randn(*shape).astype(np.float32)
@@ -14,6 +17,19 @@ def _normc_initializer(std=1.0):
         return tf.constant(out)
 
     return _initializer
+
+# Updated for TF2 with Keras
+class NormcInitializer(keras.initializers.Initializer):
+    def __init__(self, std=1.0):
+        self.std = std
+
+    def __call__(self, shape, dtype=None):
+        out = np.random.randn(*shape).astype(np.float32)
+        out *= self.std / np.sqrt(np.square(out).sum(axis=0, keepdims=True))
+        return tf.constant(out)
+
+    def get_config(self):
+        return {'std': self.std}
 
 
 def _function(inputs, outputs, updates=None, givens=None):
