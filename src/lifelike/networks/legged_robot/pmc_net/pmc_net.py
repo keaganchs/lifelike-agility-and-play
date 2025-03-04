@@ -14,7 +14,7 @@ import tpolicies.tp_utils as tp_utils
 from lifelike.networks.legged_robot.pmc_net.pmc_net_data import PMCInputs, \
     PMCOutputs, PMCTrainableVariables, PMCLosses, PMCConfig
 from lifelike.networks.legged_robot.z.z_mlp import reparameterize, log_normal_pdf
-from lifelike.networks.utils import _normc_initializer
+from lifelike.networks.utils import NormcInitializer as _normc_initializer
 from tpolicies.utils.distributions import DiagGaussianPdType
 from tpolicies.utils.sequence_ops import multistep_forward_view
 
@@ -55,8 +55,10 @@ def decoder(x, nc):
     with tf.compat.v1.variable_scope('decoder', reuse=tf.compat.v1.AUTO_REUSE):
         embed = layers.Dense(nc.embed_dim, activation=nc.main_activation_func_op)(x)
         embed = layers.Dense(nc.embed_dim, activation=nc.main_activation_func_op)(embed)
-        out = layers.Dense(12, activation=None,
-                                kernel_initializer=_normc_initializer(0.01))(embed) # TF2 migration: removed scope='mean'
+        
+        with tf.compat.v1.variable_scope('mean', reuse=tf.compat.v1.AUTO_REUSE):
+            out = layers.Dense(12, activation=None,
+                               kernel_initializer=_normc_initializer(0.01))(embed) # TF2 migration: removed scope='mean'
     return out
 
 
